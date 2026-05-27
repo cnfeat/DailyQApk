@@ -1,7 +1,6 @@
 package com.dailyquestion
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -57,17 +56,7 @@ class DailyQuestionWorker(
     override suspend fun doWork(): Result {
         return try {
             val context = applicationContext
-            val glanceIds = GlanceAppWidgetManager(context)
-                .getGlanceIds(DailyQuestionWidget::class.java)
-
-            if (glanceIds.isEmpty()) {
-                return Result.success()
-            }
-
-            glanceIds.forEach { glanceId ->
-                DailyQuestionWidget().update(context, glanceId)
-            }
-
+            WidgetUpdater.refreshAll(context)
             Result.success()
         } catch (e: Exception) {
             Result.retry()

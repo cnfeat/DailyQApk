@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name">日课一问</string>
     <string name="widget_description">每天一个好问题，破局人生。点击可换一问。</string>
+    <string name="widget_small_description">每日一问（小）</string>
+    <string name="widget_large_description">每日一问（大）</string>
     <string name="question_loading">今日问题加载中…</string>
     <string name="btn_switch">换一问</string>
     <string name="btn_used_up">今日已用完</string>
@@ -10,4 +12,5 @@
     <string name="remaining_hint">每日可换 %d 次</string>
     <string name="used_up_hint">今日换问次数已用完，明天再来</string>
     <string name="footer">每天一个好问题，破局人生</string>
+    <string name="daily_question_widget_description">点击切换问题</string>
 </resources>

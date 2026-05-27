@@ -10,17 +10,14 @@ import java.time.format.DateTimeFormatter
 /**
  * 日课一问 — 每日问题状态管理器
  *
- * 职责：
- * 1. 从 SharedPreferences 读取/写入每日状态
- * 2. 从 res/raw/questions.json 加载完整问题库
- * 3. 调度每日问题（日期变更时自动重置）
- * 4. 管理「换一问」限次逻辑（每日最多 3 次）
+ * 每日随机抽取 3 道题，循环浏览 (1/3 → 2/3 → 3/3 → 1/3 ...)。
+ * 日期变更时自动重置题库。
  *
  * 使用方式（单例）：
  *   val manager = QuestionManager.getInstance(context)
  *   val question = manager.getTodayQuestion()
  *   val next = manager.switchToNext()
- *   val remaining = manager.getRemainingSwitches()
+ *   val (index, total) = manager.getCurrentProgress()  // (0, 3)
  */
 class QuestionManager private constructor(private val context: Context) {
 
@@ -28,8 +25,9 @@ class QuestionManager private constructor(private val context: Context) {
         private const val PREFS_NAME = "daily_question_prefs"
         private const val KEY_TODAY_DATE = "today_date"
         private const val KEY_TODAY_QUESTION_ID = "today_question_id"
-        private const val KEY_SWITCH_COUNT = "switch_count"
-        private const val MAX_SWITCHES = 3
+        private const val KEY_TODAY_QUESTION_IDS = "today_question_ids"
+        private const val KEY_CURRENT_INDEX = "current_index"
+        private const val DAILY_COUNT = 3
 
         @Volatile
         private var instance: QuestionManager? = null
@@ -46,13 +44,9 @@ class QuestionManager private constructor(private val context: Context) {
 
     private val gson = Gson()
 
-    /** 完整问题库（惰性加载，仅首次访问时解析 JSON） */
+    /** 完整问题库（惰性加载） */
     private var questionList: List<Question>? = null
 
-    /**
-     * 从 res/raw/questions.json 加载问题库。
-     * 使用 Gson 解析为 List<Question>，结果内部缓存。
-     */
     private fun loadQuestions(): List<Question> {
         if (questionList != null) return questionList!!
 
@@ -68,11 +62,8 @@ class QuestionManager private constructor(private val context: Context) {
     }
 
     /**
-     * 获取或初始化今日问题。
-     *
-     * 逻辑：
-     * - 如果本地存储的日期与今天相同 → 直接返回已分配的问题
-     * - 如果日期不同（新的一天）→ 随机选新问题，重置 switchCount=0
+     * 获取今日当前问题。
+     * 新的一天自动初始化 3 道题，索引归零。
      */
     fun getTodayQuestion(): Question {
         val today = todayStr()
@@ -80,71 +71,81 @@ class QuestionManager private constructor(private val context: Context) {
 
         if (savedDate == today) {
             // 同一天 → 读取已分配的问题
-            val savedId = prefs.getString(KEY_TODAY_QUESTION_ID, null)
-            if (savedId != null) {
+            val ids = getDailyQuestionIds()
+            val index = prefs.getInt(KEY_CURRENT_INDEX, 0)
+            if (ids.isNotEmpty() && index < ids.size) {
                 val questions = loadQuestions()
-                return questions.find { it.id == savedId } ?: pickRandomQuestion()
+                val found = questions.find { it.id == ids[index] }
+                if (found != null) return found
             }
         }
 
-        // 新的一天 → 重置
-        return pickRandomQuestion().also {
-            prefs.edit()
-                .putString(KEY_TODAY_DATE, today)
-                .putString(KEY_TODAY_QUESTION_ID, it.id)
-                .putInt(KEY_SWITCH_COUNT, 0)
-                .apply()
-        }
+        // 新的一天 → 随机选 3 题，索引归零
+        return initDailyQuestions()
     }
 
     /**
-     * 执行「换一问」操作。
-     *
-     * @return Question? 返回新问题，如果今日已用完 3 次则返回 null
+     * 切换至下一题（循环：1→2→3→1）。
      */
-    fun switchToNext(): Question? {
-        val count = prefs.getInt(KEY_SWITCH_COUNT, 0)
-        if (count >= MAX_SWITCHES) return null
-
-        val questions = loadQuestions()
-        val currentId = prefs.getString(KEY_TODAY_QUESTION_ID, null)
-
-        // 随机选一个与当前不同的题目
-        val candidates = questions.filter { it.id != currentId }
-        val next = candidates.random()
+    fun switchToNext(): Question {
+        val ids = getDailyQuestionIds()
+        val currentIndex = prefs.getInt(KEY_CURRENT_INDEX, 0)
+        val nextIndex = (currentIndex + 1) % ids.size
 
         prefs.edit()
-            .putString(KEY_TODAY_QUESTION_ID, next.id)
-            .putString(KEY_TODAY_DATE, todayStr())
-            .putInt(KEY_SWITCH_COUNT, count + 1)
+            .putInt(KEY_CURRENT_INDEX, nextIndex)
             .apply()
 
-        return next
+        val questions = loadQuestions()
+        return questions.find { it.id == ids[nextIndex] }
+            ?: questions.first()
     }
 
     /**
-     * 返回今日剩余可切换次数。
+     * 获取当前进度位置。
+     * @return Pair(currentIndex: Int, totalCount: Int) 例如 (0, 3) 表示第 1/3
      */
-    fun getRemainingSwitches(): Int {
-        val count = prefs.getInt(KEY_SWITCH_COUNT, 0)
-        return (MAX_SWITCHES - count).coerceAtLeast(0)
+    fun getCurrentProgress(): Pair<Int, Int> {
+        val index = prefs.getInt(KEY_CURRENT_INDEX, 0)
+        return Pair(index, DAILY_COUNT)
     }
 
-    /** 返回今日最大可切换次数（常量值） */
-    fun getMaxSwitches(): Int = MAX_SWITCHES
-
     /**
-     * 获取当前问题在问题库中的索引（用于 Widget 等场景）。
+     * 获取当前问题索引（用于 Widget 等场景）。
      */
     fun getTodayQuestionIndex(): Int {
-        val questions = loadQuestions()
-        val savedId = prefs.getString(KEY_TODAY_QUESTION_ID, null)
-        return questions.indexOfFirst { it.id == savedId }.coerceAtLeast(0)
+        return prefs.getInt(KEY_CURRENT_INDEX, 0)
     }
 
-    private fun pickRandomQuestion(): Question {
-        val questions = loadQuestions()
-        return questions.random()
+    // ==================== 内部方法 ====================
+
+    private fun initDailyQuestions(): Question {
+        val questions = loadQuestions().toMutableList()
+        val picked = mutableListOf<Question>()
+        val pool = questions.toMutableList()
+
+        repeat(DAILY_COUNT.coerceAtMost(pool.size)) {
+            val q = pool.random()
+            picked.add(q)
+            pool.remove(q)
+        }
+
+        val ids = picked.map { it.id }
+        val today = todayStr()
+
+        prefs.edit()
+            .putString(KEY_TODAY_DATE, today)
+            .putString(KEY_TODAY_QUESTION_IDS, gson.toJson(ids))
+            .putInt(KEY_CURRENT_INDEX, 0)
+            .apply()
+
+        return picked.first()
+    }
+
+    private fun getDailyQuestionIds(): List<String> {
+        val json = prefs.getString(KEY_TODAY_QUESTION_IDS, null) ?: return emptyList()
+        val type = object : TypeToken<List<String>>() {}.type
+        return try { gson.fromJson(json, type) } catch (_: Exception) { emptyList() }
     }
 
     private fun todayStr(): String {

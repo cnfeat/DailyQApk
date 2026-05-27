@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- WorkManager initializes automatically via ContentProvider on API 26+ -->
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -10,7 +8,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DailyQuestion">
 
-        <!-- Main Launcher Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -21,7 +18,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Glance Widget Receiver -->
+        <!-- 4×1 Glance Widget -->
         <receiver
             android:name=".DailyQuestionWidgetReceiver"
             android:exported="true">
