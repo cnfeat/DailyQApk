@@ -1,6 +1,7 @@
 package com.dailyquestion
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -17,8 +18,8 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.glance.unit.dp
-import androidx.glance.unit.sp
+import androidx.glance.unit.Dp
+import androidx.glance.unit.Sp
 
 /**
  * 日课一问 — Glance Widget
@@ -47,9 +48,13 @@ class DailyQuestionWidget : GlanceAppWidget() {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .padding(12.dp)
+                    .padding(Dp(12f))
                     .background(bgColor)
-                    .clickable(actionStartActivity<MainActivity>()),
+                    .clickable(
+                        actionStartActivity<MainActivity>(
+                            intent = { Intent(context, MainActivity::class.java) }
+                        )
+                    ),
                 verticalAlignment = Alignment.Vertical.CenterVertically,
                 horizontalAlignment = Alignment.Horizontal.CenterHorizontally
             ) {
@@ -57,7 +62,7 @@ class DailyQuestionWidget : GlanceAppWidget() {
                     text = question,
                     style = TextStyle(
                         color = textColor,
-                        fontSize = 14.sp,
+                        fontSize = Sp(14f),
                         textAlign = TextAlign.Center
                     ),
                     maxLines = 4

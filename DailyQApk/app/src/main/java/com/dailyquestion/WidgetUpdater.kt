@@ -2,7 +2,7 @@ package com.dailyquestion
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.updateAppWidgetState
+
 import com.dailyquestion.model.QuestionManager
 
 /**
