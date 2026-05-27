@@ -48,6 +48,9 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupListeners()
         loadTodayQuestion()
+
+        // 调度 Widget 每日定时刷新（首次启动时注册一次即可）
+        DailyQuestionWorker.scheduleDailyUpdate(this)
     }
 
     private fun initViews() {
