@@ -1,0 +1,12 @@
+.idea/
+.workbuddy/
+setup_github.ps1
+
+# Android build outputs
+DailyQApk/build/
+DailyQApk/.gradle/
+DailyQApk/app/build/
+DailyQApk/app/.gradle/
+DailyQApk/local.properties
+DailyQApk/captures/
+DailyQApk/.externalNativeBuild/

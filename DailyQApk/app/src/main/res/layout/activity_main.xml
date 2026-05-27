@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#F5F5F5">
+
+    <!-- 顶部标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="日课一问"
+        android:textColor="#888888"
+        android:textSize="14sp"
+        android:letterSpacing="0.15" />
+
+    <!-- 日期 -->
+    <TextView
+        android:id="@+id/tv_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="#AAAAAA"
+        android:textSize="12sp" />
+
+    <!-- 问题卡片 -->
+    <FrameLayout
+        android:id="@+id/card_question"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/card_background"
+        android:elevation="4dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <!-- 主问题 -->
+            <TextView
+                android:id="@+id/tv_question"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#333333"
+                android:textSize="20sp"
+                android:lineSpacingExtra="8dp"
+                android:gravity="center"
+                android:text="今日问题加载中…" />
+
+            <!-- 分隔线 -->
+            <View
+                android:layout_width="36dp"
+                android:layout_height="2dp"
+                android:layout_marginTop="20dp"
+                android:layout_gravity="center_horizontal"
+                android:background="#E0E0E0" />
+
+            <!-- 拓展区域（可点击展开/收起） -->
+            <TextView
+                android:id="@+id/tv_extension_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_gravity="center_horizontal"
+                android:text="💭 深度追问"
+                android:textColor="#999999"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tv_extension"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="#666666"
+                android:textSize="15sp"
+                android:lineSpacingExtra="6dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- 操作区域 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:background="@drawable/button_primary"
+            android:text="换一问"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground" />
+
+    </LinearLayout>
+
+    <!-- 剩余次数提示 -->
+    <TextView
+        android:id="@+id/tv_remaining"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="#BBBBBB"
+        android:textSize="12sp" />
+
+    <!-- 底部版本信息 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="每天一个好问题，破局人生"
+        android:textColor="#CCCCCC"
+        android:textSize="12sp" />
+
+</LinearLayout>

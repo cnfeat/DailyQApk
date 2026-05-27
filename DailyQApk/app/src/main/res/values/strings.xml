@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">日课一问</string>
+    <string name="widget_description">每天一个好问题，破局人生。点击可换一问。</string>
+    <string name="question_loading">今日问题加载中…</string>
+    <string name="btn_switch">换一问</string>
+    <string name="btn_used_up">今日已用完</string>
+    <string name="extension_hint">💭 深度追问</string>
+    <string name="extension_collapse">▲ 收起追问</string>
+    <string name="remaining_hint">每日可换 %d 次</string>
+    <string name="used_up_hint">今日换问次数已用完，明天再来</string>
+    <string name="footer">每天一个好问题，破局人生</string>
+</resources>
