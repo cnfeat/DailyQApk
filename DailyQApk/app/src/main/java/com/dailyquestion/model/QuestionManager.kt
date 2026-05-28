@@ -50,15 +50,20 @@ class QuestionManager private constructor(private val context: Context) {
     private fun loadQuestions(): List<Question> {
         if (questionList != null) return questionList!!
 
-        val json = context.applicationContext.resources
-            .openRawResource(com.dailyquestion.R.raw.questions)
-            .bufferedReader()
-            .use { it.readText() }
+        return try {
+            val json = context.applicationContext.resources
+                .openRawResource(com.dailyquestion.R.raw.questions)
+                .bufferedReader()
+                .use { it.readText() }
 
-        val type = object : TypeToken<List<Question>>() {}.type
-        val list: List<Question> = gson.fromJson(json, type)
-        questionList = list
-        return list
+            val type = object : TypeToken<List<Question>>() {}.type
+            val list: List<Question> = gson.fromJson(json, type)
+            val safeList = list ?: emptyList()
+            questionList = safeList
+            safeList
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     /**
@@ -121,6 +126,10 @@ class QuestionManager private constructor(private val context: Context) {
 
     private fun initDailyQuestions(): Question {
         val questions = loadQuestions().toMutableList()
+        if (questions.isEmpty()) {
+            return Question(id = "0", question = "今天也要好好思考", extension = "")
+        }
+
         val picked = mutableListOf<Question>()
         val pool = questions.toMutableList()
 

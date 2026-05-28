@@ -5,8 +5,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.lifecycle.lifecycleScope
 import com.dailyquestion.model.QuestionManager
+import com.dailyquestion.ui.screen.DarkModeOption
 import com.dailyquestion.ui.screen.MainScreen
 import com.dailyquestion.ui.theme.DailyQuestionTheme
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +28,6 @@ class MainActivity : ComponentActivity() {
         // 检测是否来自 Widget 的切换请求
         if (intent?.getStringExtra("action") == "switch_question") {
             questionManager.switchToNext()
-            // 刷新 Widget
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     WidgetUpdater.refreshAll(this@MainActivity)
@@ -35,15 +36,22 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            DailyQuestionTheme {
-                MainScreen(questionManager = questionManager, context = this)
+            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+            val darkModeStr = prefs.getString("dark_mode", "SYSTEM") ?: "SYSTEM"
+            val isDark = when (DarkModeOption.valueOf(darkModeStr)) {
+                DarkModeOption.SYSTEM -> isSystemInDarkTheme()
+                DarkModeOption.DARK -> true
+                DarkModeOption.LIGHT -> false
+            }
+
+            DailyQuestionTheme(darkTheme = isDark) {
+                MainScreen(questionManager = questionManager, context = this@MainActivity)
             }
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // 当 Activity 已存在时处理 Widget 切换
         if (intent.getStringExtra("action") == "switch_question") {
             questionManager.switchToNext()
             lifecycleScope.launch {
@@ -51,7 +59,6 @@ class MainActivity : ComponentActivity() {
                     WidgetUpdater.refreshAll(this@MainActivity)
                 }
             }
-            // 重建界面
             recreate()
         }
     }

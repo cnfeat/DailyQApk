@@ -1,5 +1,15 @@
+# IDE
 .idea/
+*.iml
+
+# WorkBuddy
 .workbuddy/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# GitHub setup
 setup_github.ps1
 
 # Android build outputs
@@ -10,3 +20,6 @@ DailyQApk/app/.gradle/
 DailyQApk/local.properties
 DailyQApk/captures/
 DailyQApk/.externalNativeBuild/
+
+# Generated/cache
+*.log

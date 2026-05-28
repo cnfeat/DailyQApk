@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -142,7 +141,7 @@ fun CircularYearProgress(
 
             // 天数 + 周数
             Text(
-                "第 $dayOfYear / $daysInYear 天 · 第 $weekOfYear / $totalWeeks 周",
+                "今天是第 $dayOfYear / $daysInYear 天 · 第 $weekOfYear / $totalWeeks 周",
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
