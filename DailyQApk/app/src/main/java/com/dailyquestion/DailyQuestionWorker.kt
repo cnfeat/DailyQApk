@@ -1,6 +1,9 @@
 package com.dailyquestion
 
 import android.content.Context
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -14,9 +17,10 @@ import java.util.concurrent.TimeUnit
 /**
  * 日课一问 — WorkManager Worker
  *
- * 每天早 8:00 刷新 Widget 显示。
- * Widget 的无状态刷新触发 provideGlance → getQuestion()
- * → QuestionManager.getTodayQuestion()，日期变更时自动换题。
+ * 每天早 8:00 刷新 Widget：
+ * 1. 通过 QuestionManager 获取今日问题（日期变更时自动选新题）
+ * 2. 更新 Widget Glance 状态
+ * 3. 触发 Widget 重绘
  */
 class DailyQuestionWorker(
     appContext: Context,
@@ -56,7 +60,25 @@ class DailyQuestionWorker(
     override suspend fun doWork(): Result {
         return try {
             val context = applicationContext
-            WidgetUpdater.refreshAll(context)
+            val glanceIds = GlanceAppWidgetManager(context)
+                .getGlanceIds(DailyQuestionWidget::class.java)
+
+            if (glanceIds.isEmpty()) return Result.success()
+
+            // 获取今日问题（日期变更时自动选新题）
+            val newQuestion = DailyQuestionData.getRandomQuestion(context)
+
+            glanceIds.forEach { glanceId ->
+                // 先更新状态，再触��重绘
+                updateAppWidgetState(
+                    context = context,
+                    glanceId = glanceId
+                ) { prefs ->
+                    prefs[DailyQuestionWidget.KEY_QUESTION] = newQuestion
+                }
+                DailyQuestionWidget().update(context, glanceId)
+            }
+
             Result.success()
         } catch (e: Exception) {
             Result.retry()

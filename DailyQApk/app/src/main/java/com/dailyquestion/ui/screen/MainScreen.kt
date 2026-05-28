@@ -1,13 +1,21 @@
 package com.dailyquestion.ui.screen
 
-import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -16,18 +24,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.dailyquestion.DailyQuestionWorker
 import com.dailyquestion.WidgetUpdater
 import com.dailyquestion.model.QuestionManager
+import com.dailyquestion.ui.component.DotIndicator
+import com.dailyquestion.ui.component.QuestionContent
+import com.dailyquestion.ui.component.SettingsSheet
+import com.dailyquestion.ui.component.ShareSheet
 import com.dailyquestion.ui.theme.*
+import com.dailyquestion.ui.util.HapticUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,28 +52,44 @@ import java.util.Locale
 @Composable
 fun MainScreen(
     questionManager: QuestionManager,
-    context: Context = LocalContext.current
+    context: android.content.Context = LocalContext.current
 ) {
     var currentQuestion by remember { mutableStateOf(questionManager.getTodayQuestion()) }
     var currentIndex by remember { mutableStateOf(questionManager.getCurrentProgress().first) }
     val totalCount = 3
-    var showSettingsSheet by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showShare by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(Unit) { DailyQuestionWorker.scheduleDailyUpdate(context) }
-
-    val today = LocalDate.now()
-    val dateStr = "${today.monthValue}月${today.dayOfMonth}日 ${today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE)}"
+    val dateStr = LocalDate.now().let {
+        "${it.monthValue}月${it.dayOfMonth}日 ${it.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINESE)}"
+    }
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
+    var startupDone by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        DailyQuestionWorker.scheduleDailyUpdate(context)
+        kotlinx.coroutines.delay(200)
+        startupDone = true
+    }
+
+    // 深色呼吸光效
+    val breathAlpha by rememberInfiniteTransition(label = "bg_breath").animateFloat(
+        initialValue = 0.0f,
+        targetValue = if (isDark) 0.06f else 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "breath"
+    )
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { },
                 actions = {
-                    IconButton(onClick = { showSettingsSheet = true }) {
+                    IconButton(onClick = { showSettings = true }) {
                         Icon(Icons.Default.MoreHoriz, contentDescription = "更多",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.6f))
                     }
@@ -78,137 +106,177 @@ fun MainScreen(
                     if (isDark) listOf(PageBgGradientStartDark, PageBgGradientEndDark)
                     else listOf(PageBgGradientStart, PageBgGradientEnd)
                 ))
+                .then(
+                    if (isDark) Modifier.background(Brush.verticalGradient(
+                        0.0f to PageBgGradientStartDark,
+                        1.0f to Color.White.copy(alpha = breathAlpha)
+                    )) else Modifier
+                )
         ) {
-            // 一屏布局：用 weight 分配空间
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            AnimatedVisibility(
+                visible = startupDone,
+                enter = fadeIn(animationSpec = tween(500))
             ) {
-                Spacer(Modifier.height(16.dp))
-
-                // ===== 顶部（固定） =====
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.wrapContentHeight()
-                ) {
-                    Text("🌱", fontSize = 26.sp)
-                    Spacer(Modifier.height(2.dp))
-                    Text("日课一问",
-                        style = MaterialTheme.typography.titleSmall.copy(letterSpacing = 4.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f))
-                    Text(dateStr,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f))
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // ===== 问题卡片（弹性占满剩余空间） =====
-                Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 28.dp)
-                    ) {
-                        // 顶部呼吸空间（约15%）
-                        Spacer(Modifier.weight(0.15f))
-                        // 内容区域（约85%）
-                        Column(Modifier.weight(0.85f).verticalScroll(rememberScrollState())) {
-                            Text(currentQuestion.question,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontSize = 18.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Start)
+                    Spacer(Modifier.height(12.dp))
 
-                            if (currentQuestion.extension.isNotBlank()) {
-                                Spacer(Modifier.height(16.dp))
-                                Box(Modifier.width(28.dp).height(2.dp)
-                                    .background(MaterialTheme.colorScheme.primary.copy(0.3f)))
-                                Spacer(Modifier.height(12.dp))
-                                Text(currentQuestion.extension,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 22.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // 顶部：日期行
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            dateStr,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // 问题卡片
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 32.dp, vertical = 28.dp)
+                        ) {
+                            // 今日问题 标签
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(0.5f))
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "今日问题",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f)
+                                )
+                            }
+
+                            Spacer(Modifier.height(20.dp))
+
+                            // 可滚动内容
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                AnimatedContent(
+                                    targetState = currentQuestion.id,
+                                    transitionSpec = {
+                                        slideInHorizontally { width -> width } + fadeIn(animationSpec = tween(350)) togetherWith
+                                        slideOutHorizontally { width -> -width } + fadeOut(animationSpec = tween(350))
+                                    },
+                                    label = "question_card"
+                                ) { _ ->
+                                    QuestionContent(
+                                        question = currentQuestion,
+                                        primaryColor = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // 操作栏
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                val next = questionManager.switchToNext()
+                                currentQuestion = next
+                                currentIndex = questionManager.getCurrentProgress().first
+                                scope.launch { withContext(Dispatchers.IO) { WidgetUpdater.refreshAll(context) } }
+                                HapticUtil.lightTap(context)
+                            },
+                            modifier = Modifier.height(44.dp),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                        ) {
+                            DotIndicator(
+                                currentIndex = currentIndex,
+                                totalCount = totalCount,
+                                activeColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("换一问", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
+                        }
+
+                        Spacer(Modifier.width(12.dp))
+
+                        FilledTonalIconButton(
+                            onClick = { showShare = true },
+                            modifier = Modifier.size(44.dp),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(0.12f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.MoreHoriz, contentDescription = "分享", modifier = Modifier.size(20.dp))
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // 年进度
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        CircularYearProgress(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            isDarkMode = isDark
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
                 }
-
-                Spacer(Modifier.height(16.dp))
-
-                // ===== 按钮（固定） =====
-                Button(
-                    onClick = {
-                        val next = questionManager.switchToNext()
-                        currentQuestion = next
-                        currentIndex = questionManager.getCurrentProgress().first
-                        scope.launch { withContext(Dispatchers.IO) { WidgetUpdater.refreshAll(context) } }
-                        vibrate(context)
-                    },
-                    modifier = Modifier.height(44.dp).fillMaxWidth(0.6f),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Text("换一问 · ${currentIndex + 1}/$totalCount",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // ===== 进度模块（固定） =====
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(2.dp)
-                ) {
-                    YearProgressGrid(modifier = Modifier.padding(14.dp), isDarkMode = isDark)
-                }
-
-                Spacer(Modifier.height(12.dp))
             }
         }
     }
 
-    if (showSettingsSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSettingsSheet = false },
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-        ) {
-            Column(Modifier.fillMaxWidth().padding(24.dp)) {
-                Text("日课一问", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(4.dp))
-                Text("v1.0.0", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f))
-                Spacer(Modifier.height(12.dp))
-                Text("效法《论语》「吾日三省吾身」",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(24.dp))
-            }
-        }
+    // 分享弹窗
+    if (showShare) {
+        ShareSheet(
+            question = currentQuestion,
+            onDismiss = { showShare = false },
+            scope = scope
+        )
     }
-}
 
-private fun vibrate(context: Context) {
-    try {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            manager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
-        }
-    } catch (_: Exception) { }
+    // 设置面板
+    if (showSettings) {
+        SettingsSheet(onDismiss = { showSettings = false })
+    }
 }
