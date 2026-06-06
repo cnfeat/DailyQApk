@@ -27,6 +27,7 @@ class QuestionManager private constructor(private val context: Context) {
         private const val KEY_TODAY_QUESTION_ID = "today_question_id"
         private const val KEY_TODAY_QUESTION_IDS = "today_question_ids"
         private const val KEY_CURRENT_INDEX = "current_index"
+        private const val KEY_ACTIVE_TAG = "active_tag"
         private const val DAILY_COUNT = 3
 
         @Volatile
@@ -123,21 +124,61 @@ class QuestionManager private constructor(private val context: Context) {
         return prefs.getInt(KEY_CURRENT_INDEX, 0)
     }
 
+    /**
+     * 获取当前活跃标签。
+     * 返回 null 表示「全部」（不筛选）。
+     */
+    fun getActiveTag(): String? {
+        return prefs.getString(KEY_ACTIVE_TAG, null)
+    }
+
+    /**
+     * 设置活跃标签。
+     * 传 null 表示「全部」。
+     * 设置后需要触发 re-init（通常通过 MainActivity.recreate()）。
+     */
+    fun setActiveTag(tag: String?) {
+        prefs.edit().putString(KEY_ACTIVE_TAG, tag).apply()
+    }
+
+    /**
+     * 获取所有可用标签（用于 UI 展示）。
+     */
+    fun getAllTags(): List<String> {
+        val tags = loadQuestions()
+            .flatMap { it.tags }
+            .distinct()
+            .sorted()
+        return listOf("全部") + tags
+    }
+
     // ==================== 内部方法 ====================
 
     private fun initDailyQuestions(): Question {
-        val questions = loadQuestions().toMutableList()
-        if (questions.isEmpty()) {
+        val allQuestions = loadQuestions()
+        if (allQuestions.isEmpty()) {
             return Question(id = "0", question = "今天也要好好思考", extension = "")
         }
 
-        val picked = mutableListOf<Question>()
-        val pool = questions.toMutableList()
+        // 标签加权：匹配标签的问题出题权重提高
+        val activeTag = prefs.getString(KEY_ACTIVE_TAG, null)
+        val weightedPool = if (activeTag != null && activeTag != "全部") {
+            allQuestions.flatMap { q ->
+                if (q.tags.contains(activeTag)) List(3) { q }
+                else listOf(q)
+            }.toMutableList()
+        } else {
+            allQuestions.toMutableList()
+        }
 
-        repeat(DAILY_COUNT.coerceAtMost(pool.size)) {
+        val picked = mutableListOf<Question>()
+        val pool = weightedPool.toMutableList()
+        val pickCount = DAILY_COUNT.coerceAtMost(pool.size.coerceAtMost(allQuestions.size))
+
+        repeat(pickCount) {
             val q = pool.random()
             picked.add(q)
-            pool.remove(q)
+            pool.removeAll { it.id == q.id }
         }
 
         val ids = picked.map { it.id }

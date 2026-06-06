@@ -9,5 +9,7 @@ package com.dailyquestion.model
 data class Question(
     val id: String,
     val question: String,
-    val extension: String
+    val extension: String,
+    val tags: List<String> = emptyList(),
+    val suitable_for: List<String> = emptyList()
 )
