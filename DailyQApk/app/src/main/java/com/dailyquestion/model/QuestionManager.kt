@@ -103,7 +103,8 @@ class QuestionManager private constructor(private val context: Context) {
 
         val questions = loadQuestions()
         return questions.find { it.id == ids[nextIndex] }
-            ?: questions.first()
+            ?: questions.firstOrNull()
+            ?: Question(id = "0", question = "今天也要好好思考", extension = "")
     }
 
     /**
@@ -148,7 +149,8 @@ class QuestionManager private constructor(private val context: Context) {
             .putInt(KEY_CURRENT_INDEX, 0)
             .apply()
 
-        return picked.first()
+        return picked.firstOrNull()
+            ?: Question(id = "0", question = "今天也要好好思考", extension = "")
     }
 
     private fun getDailyQuestionIds(): List<String> {

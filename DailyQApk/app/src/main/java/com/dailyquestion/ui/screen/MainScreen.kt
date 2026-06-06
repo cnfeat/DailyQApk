@@ -1,6 +1,8 @@
 package com.dailyquestion.ui.screen
 
 import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
@@ -31,16 +33,21 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.dailyquestion.DailyQuestionWorker
 import com.dailyquestion.WidgetUpdater
 import com.dailyquestion.model.QuestionManager
 import com.dailyquestion.ui.component.DotIndicator
+import com.dailyquestion.ui.component.OnboardingSheet
 import com.dailyquestion.ui.component.QuestionContent
 import com.dailyquestion.ui.component.SettingsSheet
 import com.dailyquestion.ui.theme.*
 import com.dailyquestion.ui.util.HapticUtil
 import com.dailyquestion.ui.util.generateShareBitmap
 import com.dailyquestion.ui.util.saveToGallery
+import com.dailyquestion.ui.util.shareImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,11 +68,17 @@ fun MainScreen(
     var currentIndex by remember { mutableStateOf(questionManager.getCurrentProgress().first) }
     val totalCount = 3
     var showSettings by remember { mutableStateOf(false) }
+    var showShareSheet by remember { mutableStateOf(false) }
+    var shareBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // 暗色模式偏好（持久化）
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    var showOnboarding by remember {
+        val seen = prefs.getBoolean("has_seen_onboarding", false)
+        mutableStateOf(!seen)
+    }
     var darkModeOption by remember {
         mutableStateOf(DarkModeOption.valueOf(prefs.getString("dark_mode", "SYSTEM") ?: "SYSTEM"))
     }
@@ -80,6 +93,19 @@ fun MainScreen(
         DailyQuestionWorker.scheduleDailyUpdate(context)
         kotlinx.coroutines.delay(200)
         startupDone = true
+    }
+
+    // 前台恢复时重新同步 Widget 换题后的状态
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                currentQuestion = questionManager.getTodayQuestion()
+                currentIndex = questionManager.getCurrentProgress().first
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val breathAlpha by rememberInfiniteTransition(label = "bg_breath").animateFloat(
@@ -196,14 +222,15 @@ fun MainScreen(
                                 )
                             }
 
-                            // 下载按钮（仅箭头）
+                            // 分享按钮
                             IconButton(
                                 onClick = {
                                     scope.launch {
-                                        val bitmap = generateShareBitmap(context, currentQuestion)
-                                        if (bitmap != null) {
-                                            saveToGallery(context, bitmap)
-                                            snackbarHostState.showSnackbar("卡片已保存到相册")
+                                        shareBitmap = withContext(Dispatchers.IO) {
+                                            generateShareBitmap(context, currentQuestion)
+                                        }
+                                        if (shareBitmap != null) {
+                                            showShareSheet = true
                                         } else {
                                             snackbarHostState.showSnackbar("图片生成失败，请稍后重试")
                                         }
@@ -277,6 +304,16 @@ fun MainScreen(
         }
     }
 
+    // 首次使用引导
+    if (showOnboarding) {
+        OnboardingSheet(
+            onDismiss = {
+                showOnboarding = false
+                prefs.edit().putBoolean("has_seen_onboarding", true).apply()
+            }
+        )
+    }
+
     // 设置面板
     if (showSettings) {
         SettingsSheet(
@@ -287,6 +324,53 @@ fun MainScreen(
                 (context as? android.app.Activity)?.recreate()
             },
             onDismiss = { showSettings = false }
+        )
+    }
+
+    // 分享弹窗
+    if (showShareSheet && shareBitmap != null) {
+        AlertDialog(
+            onDismissRequest = { showShareSheet = false; shareBitmap = null },
+            title = { Text("分享日课一问") },
+            text = {
+                Column {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    saveToGallery(context, shareBitmap!!)
+                                }
+                                snackbarHostState.showSnackbar("卡片已保存到相册")
+                            }
+                            showShareSheet = false
+                            shareBitmap = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("保存到相册")
+                    }
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    shareImage(context, shareBitmap!!)
+                                }
+                            }
+                            showShareSheet = false
+                            shareBitmap = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("分享到...")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showShareSheet = false
+                    shareBitmap = null
+                }) { Text("取消") }
+            }
         )
     }
 }

@@ -16,6 +16,7 @@ setup_github.ps1
 DailyQApk/build/
 DailyQApk/.gradle/
 DailyQApk/app/build/
+DailyQApk/app/release/
 DailyQApk/app/.gradle/
 DailyQApk/local.properties
 DailyQApk/captures/
