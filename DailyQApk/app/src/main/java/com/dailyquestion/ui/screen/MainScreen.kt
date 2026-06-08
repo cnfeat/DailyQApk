@@ -180,77 +180,86 @@ fun MainScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                        Box(Modifier.fillMaxSize().padding(horizontal = 32.dp)) {
-                            // 上半区（0%→50%）：主问题靠分隔线
+                        Box(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 12.dp)) {
+                            // "今日问题" 左上角标签
+                            Text(
+                                "今日问题",
+                                modifier = Modifier.align(Alignment.TopStart),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            // 上半区（顶部→50%）：主问题靠分隔线
                             Box(
-                                Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.TopCenter),
+                                Modifier.fillMaxWidth().fillMaxHeight(0.46f).align(Alignment.TopCenter).padding(top = 28.dp),
                                 contentAlignment = Alignment.BottomCenter
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(bottom = 16.dp)) {
-                                    Text("今日问题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                                    Spacer(Modifier.height(8.dp))
-                                    AnimatedContent(
-                                        targetState = currentQuestion.id,
-                                        transitionSpec = { slideInHorizontally { it } + fadeIn(tween(350)) togetherWith slideOutHorizontally { -it } + fadeOut(tween(350)) },
-                                        label = "question_card"
-                                    ) { _ ->
-                                        Text(
-                                            currentQuestion.question,
-                                            style = MaterialTheme.typography.titleMedium.copy(fontSize = 22.sp, lineHeight = 36.sp, fontWeight = FontWeight.Medium),
-                                            color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Start,
-                                            maxLines = 4, overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
+                                AnimatedContent(
+                                    targetState = currentQuestion.id,
+                                    transitionSpec = { slideInHorizontally { it } + fadeIn(tween(350)) togetherWith slideOutHorizontally { -it } + fadeOut(tween(350)) },
+                                    label = "question_card"
+                                ) { _ ->
+                                    Text(
+                                        currentQuestion.question,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 22.sp, lineHeight = 36.sp, fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Start, maxLines = 4, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(bottom = 20.dp)
+                                    )
                                 }
                             }
 
-                            // 分隔线（精确 50%）
+                            // 分隔线
                             Box(Modifier.fillMaxWidth().height(1.dp).align(Alignment.Center).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.15f)))
 
-                            // 下半区（50%→100%）：扩展文字靠分隔线
+                            // 下半区（50%→底部）：扩展文字靠分隔线
                             Box(
-                                Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter),
+                                Modifier.fillMaxWidth().fillMaxHeight(0.46f).align(Alignment.BottomCenter).padding(bottom = 32.dp),
                                 contentAlignment = Alignment.TopCenter
                             ) {
-                                Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp)) {
-                                    if (currentQuestion.extension.isNotBlank()) {
-                                        Text(
-                                            currentQuestion.extension,
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 20.sp),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.65f),
-                                            textAlign = TextAlign.Start, maxLines = 7, overflow = TextOverflow.Ellipsis
-                                        )
-                                        Spacer(Modifier.height(8.dp))
-                                    }
-                                    Text("日课一问，破局人生", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f))
+                                if (currentQuestion.extension.isNotBlank()) {
+                                    Text(
+                                        currentQuestion.extension,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 20.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.65f),
+                                        textAlign = TextAlign.Start, maxLines = 7, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)
+                                    )
                                 }
                             }
 
-                            // 分享按钮
-                            IconButton(
-                                onClick = {
-                                    scope.launch {
-                                        shareBitmap = withContext(Dispatchers.IO) {
-                                            generateShareBitmap(context, currentQuestion)
-                                        }
-                                        if (shareBitmap != null) {
-                                            showShareSheet = true
-                                        } else {
-                                            snackbarHostState.showSnackbar("图片生成失败，请稍后重试")
-                                        }
-                                    }
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(12.dp)
-                                    .size(36.dp)
+                            // 底部行：水印 + 下载按钮
+                            Row(
+                                modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(bottom = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.FileDownload,
-                                    contentDescription = "下载到相册",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f),
-                                    modifier = Modifier.size(20.dp)
+                                Text(
+                                    "日课一问，破局人生",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f)
                                 )
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            shareBitmap = withContext(Dispatchers.IO) {
+                                                generateShareBitmap(context, currentQuestion)
+                                            }
+                                            if (shareBitmap != null) {
+                                                showShareSheet = true
+                                            } else {
+                                                snackbarHostState.showSnackbar("图片生成失败，请稍后重试")
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.FileDownload,
+                                        contentDescription = "下载",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }

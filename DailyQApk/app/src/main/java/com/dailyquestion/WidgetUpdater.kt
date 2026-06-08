@@ -2,7 +2,6 @@ package com.dailyquestion
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.appwidget.state.updateAppWidgetState
 
 /**
@@ -17,21 +16,25 @@ object WidgetUpdater {
      */
     suspend fun refreshAll(context: Context) {
         val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(DailyQuestionWidget::class.java)
-        if (glanceIds.isEmpty()) return
+        val q = DailyQuestionData.getCurrentQuestion(context)
 
-        val newQuestion = DailyQuestionData.getRandomQuestion(context)
-
-        glanceIds.forEach { glanceId ->
-            // 先更新 Glance 状态
-            updateAppWidgetState(
-                context = context,
-                glanceId = glanceId
-            ) { prefs ->
-                prefs[DailyQuestionWidget.KEY_QUESTION] = newQuestion
+        // 更新标准 Widget
+        val smallIds = manager.getGlanceIds(DailyQuestionWidget::class.java)
+        smallIds.forEach { glanceId ->
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[DailyQuestionWidget.KEY_QUESTION] = q.question
             }
-            // 然后触发重绘
             DailyQuestionWidget().update(context, glanceId)
+        }
+
+        // 更新大号 Widget（含扩展文字）
+        val largeIds = manager.getGlanceIds(DailyQuestionWidgetLarge::class.java)
+        largeIds.forEach { glanceId ->
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[DailyQuestionWidgetLarge.KEY_QUESTION] = q.question
+                prefs[DailyQuestionWidgetLarge.KEY_EXTENSION] = q.extension
+            }
+            DailyQuestionWidgetLarge().update(context, glanceId)
         }
     }
 }
