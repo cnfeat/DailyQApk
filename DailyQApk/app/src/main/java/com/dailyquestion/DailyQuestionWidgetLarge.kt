@@ -73,14 +73,26 @@ class DailyQuestionWidgetLarge : GlanceAppWidget() {
                     .padding(16.dp)
                     .background(bgColor)
             ) {
-                // 标题
+                // 顶行：标题(左) + 换一问(右)
                 Row(
-                    modifier = GlanceModifier.fillMaxWidth().clickable(actionStartActivity<MainActivity>()),
+                    modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Vertical.CenterVertically
                 ) {
-                    Text("日课一问", style = TextStyle(color = hintColor, fontSize = 14.sp), maxLines = 1)
-                    Text(" · ", style = TextStyle(color = hintColor, fontSize = 14.sp), maxLines = 1)
-                    Text("破局人生", style = TextStyle(color = hintColor, fontSize = 14.sp), maxLines = 1)
+                    Row(
+                        modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()),
+                        verticalAlignment = Alignment.Vertical.CenterVertically
+                    ) {
+                        Text("日课一问", style = TextStyle(color = hintColor, fontSize = 14.sp), maxLines = 1)
+                        Text(" · ", style = TextStyle(color = hintColor, fontSize = 14.sp), maxLines = 1)
+                        Text("破局人生", style = TextStyle(color = hintColor, fontSize = 14.sp), maxLines = 1)
+                    }
+                    Box(GlanceModifier.defaultWeight()) {}
+                    Text(
+                        text = "换一问",
+                        modifier = GlanceModifier.clickable(actionRunCallback<SwitchQuestionLargeAction>()),
+                        style = TextStyle(color = hintColor, fontSize = 13.sp, textAlign = TextAlign.End),
+                        maxLines = 1
+                    )
                 }
 
                 Box(GlanceModifier.height(6.dp)) {}
@@ -103,17 +115,9 @@ class DailyQuestionWidgetLarge : GlanceAppWidget() {
                     Text(
                         text = extension,
                         style = TextStyle(color = hintColor, fontSize = 12.sp, textAlign = TextAlign.Start),
-                        modifier = GlanceModifier.fillMaxWidth().padding(bottom = 4.dp).defaultWeight()
+                        modifier = GlanceModifier.fillMaxWidth().defaultWeight()
                     )
                 }
-
-                // 换一问
-                Text(
-                    text = "换一问",
-                    modifier = GlanceModifier.fillMaxWidth().clickable(actionRunCallback<SwitchQuestionLargeAction>()),
-                    style = TextStyle(color = hintColor, fontSize = 13.sp, textAlign = TextAlign.End),
-                    maxLines = 1
-                )
             }
         }
     }
