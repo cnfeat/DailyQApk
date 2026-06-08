@@ -180,7 +180,7 @@ fun MainScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                        Box(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 12.dp)) {
+                        Box(Modifier.fillMaxSize().padding(24.dp)) {
                             // "今日问题" 左上角标签
                             Text(
                                 "今日问题",
