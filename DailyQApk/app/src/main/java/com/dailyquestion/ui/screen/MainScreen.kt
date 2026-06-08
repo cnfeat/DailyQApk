@@ -181,14 +181,14 @@ fun MainScreen(
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Box(Modifier.fillMaxSize().padding(horizontal = 32.dp)) {
-                            // 上半区（0%→50%）：主问题 + 标签，居中
+                            // 上半区（0%→50%）：主问题靠分隔线
                             Box(
                                 Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.TopCenter),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.BottomCenter
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(bottom = 16.dp)) {
                                     Text("今日问题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                                    Spacer(Modifier.height(10.dp))
+                                    Spacer(Modifier.height(8.dp))
                                     AnimatedContent(
                                         targetState = currentQuestion.id,
                                         transitionSpec = { slideInHorizontally { it } + fadeIn(tween(350)) togetherWith slideOutHorizontally { -it } + fadeOut(tween(350)) },
@@ -207,12 +207,12 @@ fun MainScreen(
                             // 分隔线（精确 50%）
                             Box(Modifier.fillMaxWidth().height(1.dp).align(Alignment.Center).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.15f)))
 
-                            // 下半区（50%→100%）：扩展文字 + 水印，居中
+                            // 下半区（50%→100%）：扩展文字靠分隔线
                             Box(
                                 Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.TopCenter
                             ) {
-                                Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(horizontal = 4.dp)) {
+                                Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp)) {
                                     if (currentQuestion.extension.isNotBlank()) {
                                         Text(
                                             currentQuestion.extension,
