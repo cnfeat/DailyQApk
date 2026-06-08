@@ -1,7 +1,6 @@
 package com.dailyquestion.ui.screen
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -19,7 +18,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -32,7 +30,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -41,7 +42,6 @@ import com.dailyquestion.WidgetUpdater
 import com.dailyquestion.model.QuestionManager
 import com.dailyquestion.ui.component.DotIndicator
 import com.dailyquestion.ui.component.OnboardingSheet
-import com.dailyquestion.ui.component.QuestionContent
 import com.dailyquestion.ui.component.SettingsSheet
 import com.dailyquestion.ui.theme.*
 import com.dailyquestion.ui.util.HapticUtil
@@ -75,12 +75,12 @@ fun MainScreen(
 
     // 暗色模式偏好（持久化）
     val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    var darkModeOption by remember {
+        mutableStateOf(DarkModeOption.valueOf(prefs.getString("dark_mode", "SYSTEM") ?: "SYSTEM"))
+    }
     var showOnboarding by remember {
         val seen = prefs.getBoolean("has_seen_onboarding", false)
         mutableStateOf(!seen)
-    }
-    var darkModeOption by remember {
-        mutableStateOf(DarkModeOption.valueOf(prefs.getString("dark_mode", "SYSTEM") ?: "SYSTEM"))
     }
 
     val dateStr = LocalDate.now().let {
@@ -171,7 +171,7 @@ fun MainScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // 问题卡片（4:3 比例）
+                    // 问题卡片
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,87 +180,53 @@ fun MainScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                    Box(Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
-                        // 上半区：主问题
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .padding(top = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                "今日问题",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.height(20.dp))
+                        Box(Modifier.fillMaxSize().padding(horizontal = 32.dp)) {
+                            // 上半区（0%→50%）：主问题 + 标签，居中
                             Box(
-                                Modifier.fillMaxWidth().heightIn(min = 80.dp),
+                                Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.TopCenter),
                                 contentAlignment = Alignment.Center
                             ) {
-                                AnimatedContent(
-                                    targetState = currentQuestion.id,
-                                    transitionSpec = {
-                                        slideInHorizontally { width -> width } + fadeIn(animationSpec = tween(350)) togetherWith
-                                        slideOutHorizontally { width -> -width } + fadeOut(animationSpec = tween(350))
-                                    },
-                                    label = "question_card"
-                                ) { _ ->
-                                    Text(
-                                        currentQuestion.question,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontSize = 22.sp,
-                                            lineHeight = 36.sp,
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        textAlign = TextAlign.Start,
-                                        maxLines = 5,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("今日问题", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.height(10.dp))
+                                    AnimatedContent(
+                                        targetState = currentQuestion.id,
+                                        transitionSpec = { slideInHorizontally { it } + fadeIn(tween(350)) togetherWith slideOutHorizontally { -it } + fadeOut(tween(350)) },
+                                        label = "question_card"
+                                    ) { _ ->
+                                        Text(
+                                            currentQuestion.question,
+                                            style = MaterialTheme.typography.titleMedium.copy(fontSize = 22.sp, lineHeight = 36.sp, fontWeight = FontWeight.Medium),
+                                            color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Start,
+                                            maxLines = 4, overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
                             }
-                        }
 
-                        // 固定分隔线（垂直居中）
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .align(Alignment.Center)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.15f))
-                        )
+                            // 分隔线（精确 50%）
+                            Box(Modifier.fillMaxWidth().height(1.dp).align(Alignment.Center).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.15f)))
 
-                        // 下半区：扩展文字
-                        if (currentQuestion.extension.isNotBlank()) {
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(top = 20.dp, bottom = 4.dp)
-                                    .verticalScroll(rememberScrollState())
+                            // 下半区（50%→100%）：扩展文字 + 水印，居中
+                            Box(
+                                Modifier.fillMaxWidth().fillMaxHeight(0.5f).align(Alignment.BottomCenter),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    currentQuestion.extension,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontSize = 13.sp,
-                                        lineHeight = 20.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-                                    textAlign = TextAlign.Start
-                                )
+                                Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(horizontal = 4.dp)) {
+                                    if (currentQuestion.extension.isNotBlank()) {
+                                        Text(
+                                            currentQuestion.extension,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 20.sp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.65f),
+                                            textAlign = TextAlign.Start, maxLines = 7, overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+                                    }
+                                    Text("日课一问，破局人生", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f))
+                                }
                             }
-                        }
 
-                        // 底部水印
-                        Text(
-                            "日课一问，破局人生",
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f)
-                        )
-                    }
+                            // 分享按钮
                             IconButton(
                                 onClick = {
                                     scope.launch {
