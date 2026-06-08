@@ -17,8 +17,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -72,8 +70,6 @@ fun MainScreen(
     var showSettings by remember { mutableStateOf(false) }
     var showShareSheet by remember { mutableStateOf(false) }
     var shareBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var activeTag by remember { mutableStateOf(questionManager.getActiveTag() ?: "全部") }
-    val allTags = remember { questionManager.getAllTags() }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -174,40 +170,6 @@ fun MainScreen(
                     }
 
                     Spacer(Modifier.height(16.dp))
-
-                    // 标签筛选器
-                    if (allTags.size > 1) {
-                        androidx.compose.foundation.lazy.LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(allTags.size) { index ->
-                                val tag = allTags[index]
-                                val isSelected = tag == activeTag
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = {
-                                        if (tag != activeTag) {
-                                            activeTag = tag
-                                            questionManager.setActiveTag(if (tag == "全部") null else tag)
-                                            (context as? android.app.Activity)?.recreate()
-                                        }
-                                    },
-                                    label = {
-                                        Text(
-                                            tag,
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                    }
 
                     // 问题卡片（4:3 比例）
                     Card(
