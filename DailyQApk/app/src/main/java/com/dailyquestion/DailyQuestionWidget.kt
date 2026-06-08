@@ -87,7 +87,7 @@ class DailyQuestionWidget : GlanceAppWidget() {
                 // 问题文字
                 Text(
                     text = question,
-                    style = TextStyle(color = textColor, fontSize = 16.sp, textAlign = TextAlign.Start),
+                    style = TextStyle(color = textColor, fontSize = 18.sp, textAlign = TextAlign.Start),
                     maxLines = 4,
                     modifier = GlanceModifier
                         .fillMaxWidth()

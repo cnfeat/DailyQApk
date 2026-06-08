@@ -180,49 +180,87 @@ fun MainScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                        Box(Modifier.fillMaxSize()) {
-                            Column(
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 32.dp, vertical = 20.dp)
+                    Box(Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
+                        // 上半区：主问题
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .padding(top = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                "今日问题",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.height(20.dp))
+                            Box(
+                                Modifier.fillMaxWidth().heightIn(min = 80.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // "今日问题" 居中
-                                Text(
-                                    "今日问题",
-                                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-
-                                Spacer(Modifier.height(16.dp))
-
-                                Column(
-                                    Modifier
-                                        .weight(1f)
-                                        .verticalScroll(rememberScrollState())
-                                ) {
-                                    AnimatedContent(
-                                        targetState = currentQuestion.id,
-                                        transitionSpec = {
-                                            slideInHorizontally { width -> width } + fadeIn(animationSpec = tween(350)) togetherWith
-                                            slideOutHorizontally { width -> -width } + fadeOut(animationSpec = tween(350))
-                                        },
-                                        label = "question_card"
-                                    ) { _ ->
-                                        QuestionContent(question = currentQuestion)
-                                    }
+                                AnimatedContent(
+                                    targetState = currentQuestion.id,
+                                    transitionSpec = {
+                                        slideInHorizontally { width -> width } + fadeIn(animationSpec = tween(350)) togetherWith
+                                        slideOutHorizontally { width -> -width } + fadeOut(animationSpec = tween(350))
+                                    },
+                                    label = "question_card"
+                                ) { _ ->
+                                    Text(
+                                        currentQuestion.question,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = 22.sp,
+                                            lineHeight = 36.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Start,
+                                        maxLines = 5,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
+                            }
+                        }
 
-                                Spacer(Modifier.height(12.dp))
+                        // 固定分隔线（垂直居中）
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .align(Alignment.Center)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.15f))
+                        )
+
+                        // 下半区：扩展文字
+                        if (currentQuestion.extension.isNotBlank()) {
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(top = 20.dp, bottom = 4.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
                                 Text(
-                                    "日课一问，破局人生",
-                                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f)
+                                    currentQuestion.extension,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 13.sp,
+                                        lineHeight = 20.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                                    textAlign = TextAlign.Start
                                 )
                             }
+                        }
 
-                            // 分享按钮
+                        // 底部水印
+                        Text(
+                            "日课一问，破局人生",
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.35f)
+                        )
+                    }
                             IconButton(
                                 onClick = {
                                     scope.launch {
@@ -337,7 +375,7 @@ fun MainScreen(
                     TextButton(
                         onClick = {
                             scope.launch {
-                                withContext(Dispatchers.IO) {
+                                withContext(Dispatchers.Main) {
                                     saveToGallery(context, shareBitmap!!)
                                 }
                                 snackbarHostState.showSnackbar("卡片已保存到相册")
@@ -352,7 +390,7 @@ fun MainScreen(
                     TextButton(
                         onClick = {
                             scope.launch {
-                                withContext(Dispatchers.IO) {
+                                withContext(Dispatchers.Main) {
                                     shareImage(context, shareBitmap!!)
                                 }
                             }
