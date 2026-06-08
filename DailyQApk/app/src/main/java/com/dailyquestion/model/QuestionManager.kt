@@ -160,25 +160,22 @@ class QuestionManager private constructor(private val context: Context) {
             return Question(id = "0", question = "今天也要好好思考", extension = "")
         }
 
-        // 标签加权：匹配标签的问题出题权重提高
+        // 标签硬过滤：选中的标签只从对应池中出题
         val activeTag = prefs.getString(KEY_ACTIVE_TAG, null)
-        val weightedPool = if (activeTag != null && activeTag != "全部") {
-            allQuestions.flatMap { q ->
-                if (q.tags.contains(activeTag)) List(3) { q }
-                else listOf(q)
-            }.toMutableList()
+        val pool = if (activeTag != null && activeTag != "全部") {
+            allQuestions.filter { it.tags.contains(activeTag) }.toMutableList()
         } else {
             allQuestions.toMutableList()
         }
 
-        val picked = mutableListOf<Question>()
-        val pool = weightedPool.toMutableList()
-        val pickCount = DAILY_COUNT.coerceAtMost(pool.size.coerceAtMost(allQuestions.size))
+        // 如果筛选后题目不够3道，回退到全库
+        val effectivePool = if (pool.size >= DAILY_COUNT) pool else allQuestions.toMutableList()
 
-        repeat(pickCount) {
-            val q = pool.random()
+        val picked = mutableListOf<Question>()
+        repeat(DAILY_COUNT.coerceAtMost(effectivePool.size)) {
+            val q = effectivePool.random()
             picked.add(q)
-            pool.removeAll { it.id == q.id }
+            effectivePool.removeAll { it.id == q.id }
         }
 
         val ids = picked.map { it.id }
