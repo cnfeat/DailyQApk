@@ -10,4 +10,4 @@
     android:initialLayout="@layout/glance_default_loading_layout"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="日课一问（宽幅扩展）" />
+    android:description="@string/widget_wide_ext_description" />

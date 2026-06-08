@@ -92,21 +92,18 @@ class DailyQuestionWidgetLarge : GlanceAppWidget() {
                 Text(
                     text = question,
                     style = TextStyle(color = textColor, fontSize = 18.sp, textAlign = TextAlign.Start),
-                    maxLines = 3,
                     modifier = GlanceModifier
                         .fillMaxWidth()
-                        .defaultWeight()
                         .padding(vertical = 8.dp)
                         .clickable(actionStartActivity<MainActivity>())
                 )
 
-                // 扩展文字
+                // 扩展文字（完整显示，不截断）
                 if (extension.isNotBlank()) {
                     Text(
                         text = extension,
                         style = TextStyle(color = hintColor, fontSize = 12.sp, textAlign = TextAlign.Start),
-                        maxLines = 2,
-                        modifier = GlanceModifier.fillMaxWidth().padding(bottom = 4.dp)
+                        modifier = GlanceModifier.fillMaxWidth().padding(bottom = 4.dp).defaultWeight()
                     )
                 }
 

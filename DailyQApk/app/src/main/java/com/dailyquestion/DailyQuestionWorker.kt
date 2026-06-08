@@ -61,22 +61,21 @@ class DailyQuestionWorker(
         return try {
             val context = applicationContext
             val glanceIds = GlanceAppWidgetManager(context)
-                .getGlanceIds(DailyQuestionWidget::class.java)
+                .getGlanceIds(DailyQuestionWidgetLarge::class.java)
 
             if (glanceIds.isEmpty()) return Result.success()
 
-            // 获取今日问题（日期变更时自动选新题）
-            val newQuestion = DailyQuestionData.getRandomQuestion(context)
+            val q = DailyQuestionData.getCurrentQuestion(context)
 
             glanceIds.forEach { glanceId ->
-                // 先更新状态，再触��重绘
                 updateAppWidgetState(
                     context = context,
                     glanceId = glanceId
                 ) { prefs ->
-                    prefs[DailyQuestionWidget.KEY_QUESTION] = newQuestion
+                    prefs[DailyQuestionWidgetLarge.KEY_QUESTION] = q.question
+                    prefs[DailyQuestionWidgetLarge.KEY_EXTENSION] = q.extension
                 }
-                DailyQuestionWidget().update(context, glanceId)
+                DailyQuestionWidgetLarge().update(context, glanceId)
             }
 
             Result.success()

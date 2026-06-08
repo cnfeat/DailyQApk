@@ -20,31 +20,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 4×2 仅主问题 -->
-        <receiver android:name=".DailyQuestionWidgetReceiver" android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/daily_question_widget_info" />
-        </receiver>
-
-        <!-- 4×2 主问题+扩展 -->
-        <receiver android:name=".DailyQuestionWidgetReceiverExt4x2" android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/daily_question_widget_4x2_ext" />
-        </receiver>
-
-        <!-- 5×2 仅主问题 -->
-        <receiver android:name=".DailyQuestionWidgetReceiver5x2" android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/daily_question_widget_5x2" />
-        </receiver>
-
-        <!-- 5×2 主问题+扩展 -->
+        <!-- 5×2 Widget（主问题 + 扩展） -->
         <receiver android:name=".DailyQuestionWidgetReceiverLarge" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
