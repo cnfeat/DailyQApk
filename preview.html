@@ -15,8 +15,7 @@
   .tag:hover { border-color:#07C160; color:#07C160; }
   .tag.active { background:#eaf3de; color:#3b6d11; border-color:#07C160; font-weight:500; }
   .list { padding:8px 24px 80px; }
-  .card { background:#fff; border-radius:12px; padding:18px 24px; margin-bottom:10px; border:1px solid #e0e0d8; transition:box-shadow .15s; }
-  .card:hover { box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  .card { background:#fff; border-radius:12px; padding:18px 24px; margin-bottom:10px; border:1px solid #e0e0d8; }
   .card .meta { font-size:11px; display:flex; justify-content:space-between; margin-bottom:8px; }
   .card .id { color:#07C160; font-weight:600; }
   .card .chars { color:#aaa; }
@@ -25,13 +24,12 @@
   .card .qtags { display:flex; gap:4px; margin-top:8px; flex-wrap:wrap; }
   .card .qtag { font-size:10px; padding:2px 6px; border-radius:8px; background:#eaf3de; color:#3b6d11; }
   .stats { font-size:12px; color:#aaa; text-align:center; padding:8px; }
-  .empty { text-align:center; color:#aaa; font-size:14px; padding:60px 0; }
 </style>
 </head>
 <body>
 <header>
   <h1>日课一问 · 问题库</h1>
-  <p><span id="total">420</span> 道题 · 点击标签筛选</p>
+  <p>420 道题 · 点击标签筛选</p>
 </header>
 <div class="tags" id="tags"></div>
 <div class="stats" id="stats"></div>
@@ -43,92 +41,48 @@
 
   function getAllTags() {
     var set = {};
-    DATA.forEach(function(q) {
-      q.tags.forEach(function(t) { set[t] = true; });
-    });
+    DATA.forEach(function(q) { q.tags.forEach(function(t) { set[t] = true; }); });
     return ['全部'].concat(Object.keys(set).sort());
   }
 
   function renderTags() {
-    var container = document.getElementById('tags');
-    container.innerHTML = '';
+    var c = document.getElementById('tags');
+    c.innerHTML = '';
     getAllTags().forEach(function(t) {
-      var span = document.createElement('span');
-      span.className = 'tag' + (t === activeTag ? ' active' : '');
-      span.textContent = t;
-      span.onclick = function() { 
-        activeTag = t;
-        renderTags();
-        renderList();
-      };
-      container.appendChild(span);
+      var s = document.createElement('span');
+      s.className = 'tag' + (t === activeTag ? ' active' : '');
+      s.textContent = t;
+      s.onclick = function() { activeTag = t; renderTags(); renderList(); };
+      c.appendChild(s);
     });
   }
 
   function renderList() {
-    var filtered = activeTag === '全部'
-      ? DATA
-      : DATA.filter(function(q) { return q.tags.indexOf(activeTag) >= 0; });
-
-    document.getElementById('stats').textContent = 
-      filtered.length + ' 题 | 标签: ' + activeTag;
-
+    var filtered = activeTag === '全部' ? DATA : DATA.filter(function(q) { return q.tags.indexOf(activeTag) >= 0; });
+    document.getElementById('stats').textContent = filtered.length + ' 题 | 标签: ' + activeTag;
     var list = document.getElementById('list');
     list.innerHTML = '';
-
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty">该标签下暂无问题</div>';
-      return;
-    }
-
     filtered.forEach(function(q) {
       var card = document.createElement('div');
       card.className = 'card';
-
       var meta = document.createElement('div');
       meta.className = 'meta';
-
-      var idSpan = document.createElement('span');
-      idSpan.className = 'id';
-      idSpan.textContent = '#' + q.id;
-
-      var charsSpan = document.createElement('span');
-      charsSpan.className = 'chars';
-      charsSpan.textContent = 'Q:' + q.question.length + 'c E:' + q.extension.length + 'c';
-      if (q.suitable_for && q.suitable_for.length) {
-        charsSpan.textContent += ' · ' + q.suitable_for.join('/');
-      }
-
-      meta.appendChild(idSpan);
-      meta.appendChild(charsSpan);
-
-      var qDiv = document.createElement('div');
-      qDiv.className = 'q';
-      qDiv.textContent = q.question;
-
-      var eDiv = document.createElement('div');
-      eDiv.className = 'e';
-      eDiv.textContent = q.extension;
-
-      var tagsDiv = document.createElement('div');
-      tagsDiv.className = 'qtags';
-      q.tags.forEach(function(t) {
-        var tspan = document.createElement('span');
-        tspan.className = 'qtag';
-        tspan.textContent = t;
-        tagsDiv.appendChild(tspan);
-      });
-
-      card.appendChild(meta);
-      card.appendChild(qDiv);
-      card.appendChild(eDiv);
-      card.appendChild(tagsDiv);
+      var id = document.createElement('span');
+      id.className = 'id'; id.textContent = '#' + q.id;
+      var ch = document.createElement('span');
+      ch.className = 'chars'; ch.textContent = 'Q:' + q.question.length + 'c E:' + q.extension.length + 'c';
+      if (q.suitable_for && q.suitable_for.length) ch.textContent += ' · ' + q.suitable_for.join('/');
+      meta.appendChild(id); meta.appendChild(ch);
+      var qd = document.createElement('div'); qd.className = 'q'; qd.textContent = q.question;
+      var ed = document.createElement('div'); ed.className = 'e'; ed.textContent = q.extension;
+      var td = document.createElement('div'); td.className = 'qtags';
+      q.tags.forEach(function(t) { var ts = document.createElement('span'); ts.className = 'qtag'; ts.textContent = t; td.appendChild(ts); });
+      card.appendChild(meta); card.appendChild(qd); card.appendChild(ed); card.appendChild(td);
       list.appendChild(card);
     });
   }
 
-  renderTags();
-  renderList();
+  renderTags(); renderList();
 })();
 </script>
 </body>
